@@ -1,13 +1,17 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import java.util.stream.Collectors;
+import java.util.Scanner;
 
 
 public class Main {
+    private static final String[] nameRezervoir = {
+            "Mio", "Yuuko", "Mai", "Hakase", "Nano", "Sakamoto", "Izumi", "Makato", "Takasaki", "Kana", "Sasahara", // ordinary life
+            "Osaka", "Oliver", "Sophia", "Liam", "Emma", "Noah", "Ava", "Jackson", "Olivia", "Lucas", "Isabella"
+    };
     private static int numberOfRabbits;
     private static int numberOfBoxes;
     private static int carrotRate;
@@ -15,42 +19,51 @@ public class Main {
     private static int sleepTime;
     private static boolean yes = true;
     private static List<Box> boxes;
+    private static Queue<String> names;
+
     public static void main(String[] args) throws InterruptedException {
-        int len = args.length;
-        numberOfBoxes = 10;
-        sleepTime = 20;
-        carrotRate = 20;
-        carrotTimeout = 80;
+        getParameters();
+
+
+        List<String> n = new ArrayList<>(List.of(nameRezervoir));
+        Collections.shuffle(n);
+        names = new ArrayDeque<>(n);
 
         boxes = new ArrayList<>(numberOfBoxes);
         for (int i = 0; i < numberOfBoxes; i++) {
             boxes.add(new Box());
         }
 
-        var rabbit1 = new Rabbit("Georg");
-        var rabbit2 = new Rabbit("Tom");
+        List<Rabbit> rabbits = new ArrayList<>(numberOfRabbits);
+        for (int i = 0; i < numberOfRabbits; ++i) {
+            var rabbit = new Rabbit(names.poll());
+            rabbit.start();
+            rabbits.add(rabbit);
+        }
         var person = new Person();
 
         person.start();
 
         long s = System.currentTimeMillis();
-        rabbit2.start();
-        rabbit1.start();
 
-         rabbit1.join();
-         rabbit2.join();
+        for (var rabbit : rabbits ) {
+            rabbit.join();
+        }
 
-         yes = false;
+        yes = false;
 
         person.join();
 
-         long interval = System.currentTimeMillis() - s;
+        long interval = System.currentTimeMillis() - s;
 
-        System.out.printf("%s: %d%n%s: %d%ntook %d ms %n", rabbit1.name, rabbit1.eatenCarrots,
-                rabbit2.name, rabbit2.eatenCarrots, interval);
+        /*
+        ---------------------------------------------------------------------------------------
+        |   I like using the program arguments instead of doing the question answer thing.
+        |   Here's that approach that I started but abandoned to adhere to homework requirements
+        ---------------------------------------------------------------------------------------
+         */
 
-
-
+//        int len = args.length;
 //
 //        switch (len) {
 //            case 1 -> {
@@ -77,8 +90,24 @@ public class Main {
 //                System.exit(64);
 //            }
 //        }
+        /*
+        --------------------------------------------------------------------------------------------
+         */
     }
-    private static void start(List<Integer> args) {
+
+    public static void getParameters() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter number of rabbits: ");
+        numberOfRabbits = Integer.parseInt(scanner.nextLine());
+        System.out.print("Enter number of boxes: ");
+        numberOfBoxes = Integer.parseInt(scanner.nextLine());
+        System.out.print("Enter carrot production rate: ");
+        carrotRate = Integer.parseInt(scanner.nextLine());
+        System.out.print("Enter carrot timeout: ");
+        carrotTimeout = Integer.parseInt(scanner.nextLine());
+        System.out.print("Enter rabbit sleep time: ");
+        sleepTime = Integer.parseInt(scanner.nextLine());
+        System.out.println("Game on!");
 
     }
 
@@ -91,16 +120,16 @@ public class Main {
             while (yes) {
                 try {
                     int carrotIdx = random.nextInt(numberOfBoxes);
-                    System.out.printf("picked %d at %d%n", carrotIdx, System.currentTimeMillis());
+                    System.out.printf("picked %d%n", carrotIdx);
                     carrots.add(carrotIdx);
                     times.add(System.currentTimeMillis());
                     if (!times.isEmpty()) {
                         long lastTime = times.peek();
-                        System.out.printf("diff %d%n", System.currentTimeMillis() - lastTime );
+//                        System.out.printf("diff %d%n", System.currentTimeMillis() - lastTime );
                         if (System.currentTimeMillis() - lastTime > carrotTimeout) {
                             long bye = times.poll();
                             int idx = carrots.poll();
-                            System.out.println("removed carrot at " + idx + " after " + bye + " ms timeout");
+                            System.out.println("removed carrot at " + idx + " after " + (System.currentTimeMillis() - bye) + " ms timeout");
                             synchronized (boxes) {
                                 boxes.get(idx).carrotYes = false;
                             }
@@ -121,14 +150,13 @@ public class Main {
             }
 
 
-
         }
     }
 
     public static class Rabbit extends Thread {
+        public int eatenCarrots = 0;
         String name;
         int index = 0;
-        public int eatenCarrots = 0;
 
         public Rabbit(String name) {
             this.name = name;
@@ -145,13 +173,12 @@ public class Main {
                         if (index < numberOfBoxes && boxes.get(index).carrotYes) {
                             boxes.get(index).carrotYes = false;
                             eatenCarrots++;
-                            System.out.println(name + " ate "+ index + " nom!");
+                            System.out.println(name + " ate " + index + " nom!");
                         }
                     }
                     Thread.sleep(sleepTime);
 
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                     System.err.println("rabbit interrupted");
                 }
@@ -160,7 +187,6 @@ public class Main {
     }
 
     public static class Box {
-//        List<Rabbit> rabbits = null;
         boolean carrotYes = false;
 
 
